@@ -111,6 +111,10 @@ private
       ENV["PATH"],
       "bin",
       system_paths,
+      "/app/vendor/node/bin",
+      "/app/node_modules/.bin",
+      "#{Dir.pwd}/vendor/node/bin",
+      "#{Dir.pwd}/node_modules/.bin",
     ]
     paths.unshift("#{slug_vendor_jvm}/bin") if ruby_version.jruby?
     paths.unshift(safe_binstubs)
@@ -237,7 +241,7 @@ private
     instrument 'setup_profiled' do
       set_env_override "GEM_PATH", "$HOME/#{slug_vendor_base}:$GEM_PATH"
       set_env_default  "LANG",     "en_US.UTF-8"
-      set_env_override "PATH",     binstubs_relative_paths.map {|path| "$HOME/#{path}" }.join(":") + ":$PATH"
+      set_env_override "PATH",     binstubs_relative_paths.map {|path| "$HOME/#{path}" }.join(":") + ":$PATH" + "$HOME/vendor/node/bin:$HOME/node_modules/.bin"
 
       if ruby_version.jruby?
         set_env_default "JAVA_OPTS", default_java_opts
