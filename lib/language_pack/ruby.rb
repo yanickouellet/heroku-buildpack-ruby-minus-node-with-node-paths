@@ -14,8 +14,6 @@ class LanguagePack::Ruby < LanguagePack::Base
   LIBYAML_PATH         = "libyaml-#{LIBYAML_VERSION}"
   BUNDLER_VERSION      = "1.5.2"
   BUNDLER_GEM_PATH     = "bundler-#{BUNDLER_VERSION}"
-  NODE_VERSION         = "0.4.7"
-  NODE_JS_BINARY_PATH  = "node-#{NODE_VERSION}"
   JVM_BASE_URL         = "http://heroku-jdk.s3.amazonaws.com"
   LATEST_JVM_VERSION   = "openjdk7-latest"
   LEGACY_JVM_VERSION   = "openjdk1.7.0_25"
@@ -91,7 +89,6 @@ class LanguagePack::Ruby < LanguagePack::Base
         install_bundler_in_app
         build_bundler
         create_database_yml
-        install_binaries
         run_assets_precompile_rake_task
       end
       super
@@ -111,8 +108,6 @@ private
       ENV["PATH"],
       "bin",
       system_paths,
-      "/app/vendor/node/bin",
-      "/app/node_modules/.bin",
       "#{Dir.pwd}/vendor/node/bin",
       "#{Dir.pwd}/node_modules/.bin",
     ]
@@ -241,7 +236,7 @@ private
     instrument 'setup_profiled' do
       set_env_override "GEM_PATH", "$HOME/#{slug_vendor_base}:$GEM_PATH"
       set_env_default  "LANG",     "en_US.UTF-8"
-      set_env_override "PATH",     binstubs_relative_paths.map {|path| "$HOME/#{path}" }.join(":") + ":$PATH" + "$HOME/vendor/node/bin:$HOME/node_modules/.bin"
+      set_env_override "PATH",     binstubs_relative_paths.map {|path| "$HOME/#{path}" }.join(":") + ":$PATH"
 
       if ruby_version.jruby?
         set_env_default "JAVA_OPTS", default_java_opts
@@ -390,20 +385,6 @@ WARNING
       Dir.chdir(slug_vendor_base) do |dir|
         `cp -R #{bundler.bundler_path}/. .`
       end
-    end
-  end
-
-  # default set of binaries to install
-  # @return [Array] resulting list
-  def binaries
-    add_node_js_binary
-  end
-
-  # vendors binaries into the slug
-  def install_binaries
-    instrument 'ruby.install_binaries' do
-      binaries.each {|binary| install_binary(binary) }
-      Dir["bin/*"].each {|path| run("chmod +x #{path}") }
     end
   end
 
@@ -681,18 +662,6 @@ params = CGI.parse(uri.query || "")
   # @return [Array] the database addon if the pg gem is detected or an empty Array if it isn't.
   def add_dev_database_addon
     bundler.has_gem?("pg") ? ['heroku-postgresql:hobby-dev'] : []
-  end
-
-  # decides if we need to install the node.js binary
-  # @note execjs will blow up if no JS RUNTIME is detected and is loaded.
-  # @return [Array] the node.js binary path if we need it or an empty Array
-  def add_node_js_binary
-    # bundler.has_gem?('execjs') ? [NODE_JS_BINARY_PATH] : []
-    # 
-    # we never want this buildpack to install nodejs binaries
-    # instead we are using ddollar's multibuildpack and 
-    # including a standalone node buildpack
-    [ ]
   end
 
   def run_assets_precompile_rake_task
